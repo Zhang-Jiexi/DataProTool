@@ -23,6 +23,8 @@ import numpy as np
 import pandas as pd
 import sklearn.preprocessing as preprocessing
 import sklearn.feature_selection as feature_selection
+import sklearn.base as base
+import sklearn.model_selection as model_selection
 
 __version__ = '1.0.0'
 
@@ -183,7 +185,7 @@ class FreatureDerivation:
         return dataframe
     
 
-    def time_feature_derivation(self, timeSeries:pd.Series, timeStamp:dict=None, precision_high:bool=False)-> pd.DataFrame:
+    def time_feature_derivation(self, time_data:pd.Series, time_stamp:dict=None, precision_high:bool=False)-> pd.DataFrame:
         """
         对数据进行时序特征衍生
 
@@ -192,14 +194,14 @@ class FreatureDerivation:
 
         Args:
             timeSeries (pd.Series):要进行时序特征衍生的时序字段,时间默认格式: "Y-H-D H:M:S"
-            timeStamp (pd.Timestamp, optional): 手动输入关键时间节点的时间戳. 默认为 无(None)
+            time_stamp (pd.time_stamp, optional): 手动输入关键时间节点的时间戳. 默认为 无(None)
             timeStame 参数格式:
             {'关键时间节点名称':['时间点']...} ,时间点默认格式:"Y-H-D H:M:S"
 
             precision_high (bool, optional): 是否进行高精度(时分秒)计算. 默认为False.
 
         Returns:
-            pd.DataFrame: 时序特征衍生后的数据
+            data(pd.DataFrame): 时序特征衍生后的数据
 
         时序特征衍生内容:
             时间点的年、月、日(时、分、秒)提取
@@ -210,7 +212,7 @@ class FreatureDerivation:
         """
 
         features_new = pd.DataFrame()
-        time_data = pd.to_datetime(timeSeries)
+        time_data = pd.to_datetime(time_data)
         col_name = time_data.name
 
         features_new[col_name + '_year'] = time_data.dt.year
@@ -234,9 +236,9 @@ class FreatureDerivation:
         timestamp_col_name = []
         timestame_col = []
 
-        if timeStamp !=None:
-            timestamp_col_name = list(timeStamp.keys)
-            timestame_col = [pd.Timestamp(x) for x in list[timeStamp.values]]
+        if time_stamp !=None:
+            timestamp_col_name = list(time_stamp.keys)
+            timestame_col = [pd.time_stamp(x) for x in list[time_stamp.values]]
 
         time_max = time_data.max()
         time_min = time_data.min()
@@ -261,21 +263,28 @@ class FeatureFilter:
     """
     此类用于实现以下特征筛选:
         方差分析: analysis_variance   (适用于用离散型标签筛选连续性特征)
+        特征递归消除(RFE): analysis_RFE(CV)
     """
 
-    def analysis_variance(self, data:pd.DataFrame|pd.Series, labels:list, keep_num:int, threshold:float=0, return_p:bool=False)->pd.DataFrame|tuple[pd.DataFrame,list]:
+    def analysis_variance(self, data:pd.DataFrame, labels:pd.DataFrame
+    , keep_num:int, threshold:float=0, return_p:bool=False
+    )->tuple[pd.DataFrame,feature_selection.SelectKBest]|tuple[pd.DataFrame,feature_selection.SelectKBest,list]:
         """
-        对数据进行方差分析,并按照返回筛选过后指定个数的特征。
+        对数据进行方差分析,并返回筛选后的特征、筛选模型与p_values(可选).
         注: 方差分析适用于离散型标签筛选连续型特征
+
         Args:
-            data (pd.DataFrame | pd.Series): 需要进行方差分析的特征数据
-            labels (list): 数据的标签
+            data (pd.DataFrame|pd.Series|np.ndarray): 需要进行方差分析的特征数据
+            labels (pd.DataFrame|pd.Series|np.ndarray): 数据的标签
             keep_num(int, >0): 要保留的特征个数
             threshold(int, optional): 附加阈值条件, 默认为0(无),如果输入一个整数,将会在
             筛选完特征之后再选出P_values小于threshold的特征
             return_p(bool, optional): 是否返回所有特征的显著性水平,默认为False
+
         Returns:
-            pd.DataFrame: 方差分析后被筛选出的特征数据
+            data(pd.DataFrame): 方差分析后被筛选出的特征数据,顺序为p_values从小到大
+            selector(feature_selection.SelectKBest): 训练好的模型
+            p_values(list,optional): 所有特征的p_values
 
         """
         if data.shape[0] != len(labels):
@@ -285,19 +294,68 @@ class FeatureFilter:
         if threshold < 0 :
             raise ValueError("threshold 必须为正数！")
         
-        features = data.columns.tolist
-        chooser = feature_selection.SelectKBest(feature_selection.f_classif, k=keep_num)
-        chooser.fit(data,labels)
-        index = chooser.get_support().tolist
-        p_values = chooser.pvalues_.tolist[index]
-        feature_selected = features[index]
+        features = data.columns
+        selector = feature_selection.SelectKBest(feature_selection.f_classif, k=keep_num)
+        selector.fit(data,labels)
+        index = selector.get_support().tolist()
+        p_values = selector.pvalues_[index].tolist()
+        feature_selected = features[index].tolist()
         if threshold > 0:
-            for each in p_values:
-                if each > threshold:
+            for each in range(len(feature_selected)):
+                if p_values[each] > threshold:
                     feature_selected.remove(each)
+        feature_selected.sort(key=lambda p_values:p_values[0])
         
         data_return = pd.DataFrame(data=data[feature_selected],columns=feature_selected)
+
         if return_p:
-            return data_return, p_values
+            return data_return, selector, p_values
         else:
-            return data_return
+            return data_return, selector
+
+    def analysis_RFE(self, data:pd.DataFrame|pd.Series, labels:pd.DataFrame|pd.Series, estimator:base.BaseEstimator
+    , keep_num:int,cv:int|model_selection.KFold|model_selection.StratifiedKFold=0, n_jobs:int=1, verbose:int=0
+    )->tuple[pd.DataFrame,feature_selection.RFE|feature_selection.RFECV]:
+        """
+        对数据进行特征递归消除,并返回筛选后的特征及筛选模型.
+
+        Args:
+            data (pd.DataFrame | pd.Series): 需要进行RFE/RFECV特征筛选的特征数据
+            labels (pd.DataFrame | pd.Series): 数据标签
+            estimator (base.BaseEstimator): 用来进行特征筛选的监督学习估计器
+            keep_num (int): 保留(RFE)/最少保留(RFECV)的特征数量
+            cv (int, optional): 进行RFECV的交叉验证折数,如果为0,则进行RFE,默认为0.
+            n_jobs (int, optional): 进行特征筛选的CPU数量,注意: 此参数仅对RFECV有效,默认为1.
+            verbose (int, optional):进行特征筛选时输出模型训练过程的详细程度,默认为0.
+
+        Returns:
+            data(pd.Dataframe): 筛选出的特征
+            selector(feature_selection.RFE|feature_selection.RFECV): 训练好的模型
+        """
+        if type(cv)==int and cv < 0:
+            raise ValueError("cv 为int类型时,必须大于或等于0")
+        if keep_num <= 0:
+            raise ValueError("keep_num 必须为正整数")
+
+        if type(data) == pd.Series:
+            data = pd.DataFrame(data)
+        
+        if cv == 0:
+            selector = feature_selection.RFE(estimator,n_features_to_select=keep_num,verbose=verbose)
+        else:
+            selector = feature_selection.RFECV(estimator,min_features_to_select=keep_num,cv=cv,n_jobs=n_jobs,verbose=verbose)
+        
+        selector.fit_transform(data,labels)
+
+        results = selector.support_.tolist()
+        columns = data.columns[results]
+        ranking = selector.ranking_.tolist()[0:len(columns)]
+        ranking = [ [ranking[i],i] for i in range(len(ranking))]
+        ranking.sort(key = lambda ranking: ranking[0])
+
+        data = pd.DataFrame(data=data[columns],columns=columns)
+        return_data = pd.DataFrame()
+        for each in ranking:
+            return_data[columns[each[1]]] = data[columns[each[1]]]
+        
+        return data, selector
