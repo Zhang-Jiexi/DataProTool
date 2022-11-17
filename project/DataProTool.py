@@ -25,7 +25,7 @@ import sklearn.feature_selection as feature_selection
 import sklearn.model_selection as model_selection
 import sklearn.preprocessing as preprocessing
 
-__version__ = '1.0.1'
+__version__ = '1.1.1'
 
 def one_hot_columns(col_used:list, col_categories:list)-> list:
     """
