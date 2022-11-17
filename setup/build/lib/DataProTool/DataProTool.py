@@ -1,5 +1,5 @@
 """
-DataProTool
+DataProTools
 =====
 简介
 ----
@@ -18,15 +18,14 @@ DataProTool
 # Author: Zhang Jiexi <zhangjiexi66696@outlook.com>
 
 
-
 import numpy as np
 import pandas as pd
-import sklearn.preprocessing as preprocessing
-import sklearn.feature_selection as feature_selection
 import sklearn.base as base
+import sklearn.feature_selection as feature_selection
 import sklearn.model_selection as model_selection
+import sklearn.preprocessing as preprocessing
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 def one_hot_columns(col_used:list, col_categories:list)-> list:
     """
@@ -61,7 +60,7 @@ def one_hot(data: pd.DataFrame,columns : list,drop: str='if_binary')-> pd.DataFr
         drop(str, optional): 是否取消对二分类的OneHot. 默认'if_binary'.
     
     Returns:
-        data(pd.DataFrame):Onehot后的d全部ata(包括未OneHot的数据)
+        data(pd.DataFrame):Onehot后的d全部ata(包括未OneHot的数据).
     """
 
     emc = preprocessing.OneHotEncoder(drop='if_binary') if drop == 'if_binary' else preprocessing.OneHotEncoder()
@@ -81,11 +80,11 @@ def nan_count(data:pd.DataFrame,columns:list=['ALL'])-> pd.DataFrame:
     获取dataframe关于缺失值的信息(缺失值个数,缺失值占比).
 
     Args:
-        data (pd.DataFrame): 需统计的dataframe
+        data (pd.DataFrame): 需统计的dataframe.
         columns (list, optional):需统计的列.默认['ALL'].
 
     Returns:
-        data(pd.Dataframe): 以dataframe形式返回统计信息
+        data(pd.Dataframe): 以dataframe形式返回统计信息.
     """
 
     columns = data.columns if columns == ['ALL'] else columns
@@ -107,15 +106,44 @@ def nan_count(data:pd.DataFrame,columns:list=['ALL'])-> pd.DataFrame:
 class FreatureDerivation:
     """
     此类用于实现以下特征衍生:
+        多项式特征衍生: polynomial_feature_derivation
         分组特征衍生: group_freature_derivation
         时序特征衍生: time_feature_dervation
     """
+    
+    def polynomial_feature_derivation(self,data:pd.DataFrame,columns:list,degree:int=2,interaction_only:bool=False,include_bias:bool=False)->pd.DataFrame:
+        """
+        对数据进行多项式特征衍生.
+
+        Args:
+            data (pd.DataFrame): 原始数据.
+            columns (list): 要进行特征衍生的列名,如果为 [] 则对所有列进行特征衍生.
+            degree (int, optional): 多项式次数,默认为2.
+            interaction_only (bool, optional): 是否仅生成交互特征,默认为False.
+            include_bias (bool, optional):是否包括偏差列,即该特征中所有多项式幂均为零.默认为False.
+
+        Returns:
+            data(pd.DataFrame): 经过多项式特征衍生后的数据.
+        """
+        derivator = preprocessing.PolynomialFeatures(degree=degree,interaction_only=interaction_only,include_bias=include_bias)
+        data_p = derivator.fit_transform(data[columns])
+        columns_new = derivator.get_feature_names()
+
+        if columns != []:
+            columns_old = data.columns
+            columns_left = list(set(columns_old) - set(columns))
+            data = pd.concat([ data[columns_left], data_p ],axis=1)
+            return data
+        else:
+            data = pd.DataFrame(data=data_p,columns=columns_new)
+            return data
+
 
     def group_freature_derivation(self, data:pd.DataFrame, maincol:list,aggs:dict)-> pd.DataFrame:
         """
         对数据进行分组特征衍生.
 
-        参数：
+        参数
         ----
 
         Args:
@@ -160,17 +188,16 @@ class FreatureDerivation:
 
         columns = maincol
         mainstr = columns[0]
-        num_col = ['max','min','mean','var','skew','median','quantile-0.25','quantile-0.75']
-        cat_col = ['max','min','mean','var','median','count','nunique','quantile-0.25','quantile-0.75']
 
         for each in aggs.keys():
             if 'ALL-num' in aggs[each]:
-                aggs[each] = num_col
+                aggs[each] = ['max','min','mean','var','skew','median','quantile-0.25','quantile-0.75']
             if 'ALL-cat' in aggs[each]:
-                aggs[each] = cat_col
-
+                aggs[each] = ['max','min','mean','var','median','count','nunique','quantile-0.25','quantile-0.75']
+            
             columns.extend([ mainstr + '_' + each + '_' + stat for stat in aggs[each]])
 
+        for each in aggs.keys():
             if 'quantile-0.75' in aggs[each]:
                 aggs[each].remove('quantile-0.75')
                 aggs[each].append(quantile75)
@@ -182,33 +209,32 @@ class FreatureDerivation:
         freature_data.columns = columns
         dataframe = pd.merge(data,freature_data,how='left',on=mainstr)
 
+        del aggs
         return dataframe
     
 
     def time_feature_derivation(self, time_data:pd.Series, time_stamp:dict=None, precision_high:bool=False)-> pd.DataFrame:
         """
-        对数据进行时序特征衍生
+        对数据进行时序特征衍生.
 
         参数:
         ---
 
         Args:
-            timeSeries (pd.Series):要进行时序特征衍生的时序字段,时间默认格式: "Y-H-D H:M:S"
-            time_stamp (pd.time_stamp, optional): 手动输入关键时间节点的时间戳. 默认为 无(None)
+            timeSeries (pd.Series):要进行时序特征衍生的时序字段,时间默认格式: "Y-H-D H:M:S".
+            time_stamp (pd.time_stamp, optional): 手动输入关键时间节点的时间戳. 默认为 无(None).
             timeStame 参数格式:
-            {'关键时间节点名称':['时间点']...} ,时间点默认格式:"Y-H-D H:M:S"
+            {'关键时间节点名称':['时间点']...} ,时间点默认格式:"Y-H-D H:M:S".
 
             precision_high (bool, optional): 是否进行高精度(时分秒)计算. 默认为False.
 
         Returns:
-            data(pd.DataFrame): 时序特征衍生后的数据
+            data(pd.DataFrame): 时序特征衍生后的数据.
 
         时序特征衍生内容:
-            时间点的年、月、日(时、分、秒)提取
-            关键时间点与当前时间点的差(月、日、(时、分、秒))
         ----------------
-
-
+            时间点的年、月、日(时、分、秒)提取.
+            关键时间点与当前时间点的差(月、日、(时、分、秒)).
         """
 
         features_new = pd.DataFrame()
@@ -274,17 +300,17 @@ class FeatureFilter:
         注: 方差分析适用于离散型标签筛选连续型特征
 
         Args:
-            data (pd.DataFrame|pd.Series|np.ndarray): 需要进行方差分析的特征数据
-            labels (pd.DataFrame|pd.Series|np.ndarray): 数据的标签
-            keep_num(int, >0): 要保留的特征个数
+            data (pd.DataFrame|pd.Series|np.ndarray): 需要进行方差分析的特征数据.
+            labels (pd.DataFrame|pd.Series|np.ndarray): 数据的标签.
+            keep_num(int, >0): 要保留的特征个数.
             threshold(int, optional): 附加阈值条件, 默认为0(无),如果输入一个整数,将会在
-            筛选完特征之后再选出P_values小于threshold的特征
-            return_p(bool, optional): 是否返回所有特征的显著性水平,默认为False
+            筛选完特征之后再选出P_values小于threshold的特征.
+            return_p(bool, optional): 是否返回所有特征的显著性水平,默认为False.
 
         Returns:
-            data(pd.DataFrame): 方差分析后被筛选出的特征数据,顺序为p_values从小到大
-            selector(feature_selection.SelectKBest): 训练好的模型
-            p_values(list,optional): 所有特征的p_values
+            data(pd.DataFrame): 方差分析后被筛选出的特征数据,顺序为p_values从小到大.
+            selector(feature_selection.SelectKBest): 训练好的模型.
+            p_values(list,optional): 所有特征的p_values.
 
         """
         if data.shape[0] != len(labels):
@@ -306,12 +332,12 @@ class FeatureFilter:
                     feature_selected.remove(each)
         feature_selected.sort(key=lambda p_values:p_values[0])
         
-        data_return = pd.DataFrame(data=data[feature_selected],columns=feature_selected)
+        data = pd.DataFrame(data=data[feature_selected],columns=feature_selected)
 
         if return_p:
-            return data_return, selector, p_values
+            return data, selector, p_values
         else:
-            return data_return, selector
+            return data, selector
 
     def analysis_RFE(self, data:pd.DataFrame|pd.Series, labels:pd.DataFrame|pd.Series, estimator:base.BaseEstimator
     , keep_num:int,cv:int|model_selection.KFold|model_selection.StratifiedKFold=0, n_jobs:int=1, verbose:int=0
@@ -320,17 +346,17 @@ class FeatureFilter:
         对数据进行特征递归消除,并返回筛选后的特征及筛选模型.
 
         Args:
-            data (pd.DataFrame | pd.Series): 需要进行RFE/RFECV特征筛选的特征数据
-            labels (pd.DataFrame | pd.Series): 数据标签
-            estimator (base.BaseEstimator): 用来进行特征筛选的监督学习估计器
-            keep_num (int): 保留(RFE)/最少保留(RFECV)的特征数量
+            data (pd.DataFrame | pd.Series): 需要进行RFE/RFECV特征筛选的特征数据.
+            labels (pd.DataFrame | pd.Series): 数据标签.
+            estimator (base.BaseEstimator): 用来进行特征筛选的监督学习估计器.
+            keep_num (int): 保留(RFE)/最少保留(RFECV)的特征数量.
             cv (int, optional): 进行RFECV的交叉验证折数,如果为0,则进行RFE,默认为0.
             n_jobs (int, optional): 进行特征筛选的CPU数量,注意: 此参数仅对RFECV有效,默认为1.
             verbose (int, optional):进行特征筛选时输出模型训练过程的详细程度,默认为0.
 
         Returns:
-            data(pd.Dataframe): 筛选出的特征
-            selector(feature_selection.RFE|feature_selection.RFECV): 训练好的模型
+            data(pd.Dataframe): 筛选出的特征.
+            selector(feature_selection.RFE|feature_selection.RFECV): 训练好的模型.
         """
         if type(cv)==int and cv < 0:
             raise ValueError("cv 为int类型时,必须大于或等于0")
@@ -353,9 +379,9 @@ class FeatureFilter:
         ranking = [ [ranking[i],i] for i in range(len(ranking))]
         ranking.sort(key = lambda ranking: ranking[0])
 
-        data = pd.DataFrame(data=data[columns],columns=columns)
-        return_data = pd.DataFrame()
+        data_p = pd.DataFrame(data=data[columns],columns=columns)
+        data = pd.DataFrame()
         for each in ranking:
-            return_data[columns[each[1]]] = data[columns[each[1]]]
+            data[columns[each[1]]] = data_p[columns[each[1]]]
         
         return data, selector
