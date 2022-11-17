@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
   name="DataProTool",
-  version="1.1.0",
+  version="1.1.1",
   author="Zhang Jiexi",
   author_email="zhangjiexi66696@outlook.com",
   description="It is a library that support advance tools in feature engineering",
