@@ -29,7 +29,6 @@ import sklearn.model_selection as model_selection
 import sklearn.preprocessing as preprocessing
 import tqdm
 import gc
-import copy
 
 __version__ = '1.2.0'
 
@@ -48,17 +47,7 @@ def one_hot_columns(col_used:list, col_categories:list)-> list:
     -------
         col_new(list): the feature names after OneHot encoding.
     """
-
-    col_new=[]
-    for i,j in enumerate(col_used):
-        if len(col_categories[i]) == 2:
-            col_new.append(j)
-        else:
-            for f in col_categories[i]:
-                name = str(j) + '_' + str(f)
-                col_new.append(name)
-    return col_new
-
+    return
 
 def one_hot(data: pd.DataFrame,columns:list=[],drop: str='if_binary')-> pd.DataFrame:
     """
@@ -75,24 +64,7 @@ def one_hot(data: pd.DataFrame,columns:list=[],drop: str='if_binary')-> pd.DataF
         data(pd.DataFrame) Data after OneHot encoding,include the data which is not encode by OneHot.
     """
 
-    emc = preprocessing.OneHotEncoder(drop='if_binary') if drop == 'if_binary' else preprocessing.OneHotEncoder()
-    if columns == []:
-        columns = data.columns
-        flag = False
-    else:
-        flag = True
-
-    data_use = data[columns]
-    columns_else = [i for i in data.columns if i not in columns]
-    data_else = data[columns_else]
-    result = emc.fit_transform(data_use).toarray()
-    columns_new = one_hot_columns(columns,emc.categories_)
-
-    dataframe = pd.DataFrame(data=result,columns=columns_new)
-    if flag:
-        dataframe = pd.concat([data_else,dataframe],axis=1)
-    return dataframe
-
+    return
 
 def nan_count(data:pd.DataFrame,columns:list=['ALL'])-> pd.DataFrame:
     """
@@ -108,26 +80,14 @@ def nan_count(data:pd.DataFrame,columns:list=['ALL'])-> pd.DataFrame:
         data(pd.Dataframe): Missing values informations of the data.
     """
 
-    columns = data.columns if columns == ['ALL'] else columns
-    nan_count = []
-    nan_percent = []
-
-    for each in columns:
-        nan = data[each].isnull().sum()
-        nan_p = nan/(len(data[each]))
-        nan_count.append(nan)
-        nan_percent.append(nan_p)
-    
-    dataframe = pd.DataFrame(list(zip(nan_count,nan_percent)), columns=['nan count', 'nan percent'])
-    dataframe.index = columns
-    return dataframe.sort_values(['nan percent'],ascending=[False])
+    return
 
 
 
 class FreatureDerivation:
     """
         This class is used to following feature derivate:
-
+        
             cross combination feature derivation:
              cross_combination_feature_derivation()
 
@@ -177,25 +137,8 @@ class FreatureDerivation:
         -----------------
             This function is usually suggested to use for discrete features.
         """
-        feature_new = []
+        return
 
-        if columns == []:
-            columns = data.columns
-        features = data[columns]
-
-        for x1_index, x1_feature in enumerate(features):
-            for x2_index in range(x1_index+1,len(columns)): 
-                new_name = x1_feature +"&" + columns[x2_index]
-                new_feature = pd.DataFrame(data= data[x1_feature].astype("str") + "&" + data[columns[x2_index]].astype("str"),columns=[new_name])
-                feature_new.append(new_feature)
-        
-        features_new = pd.concat(feature_new,axis=1)
-
-        if is_onehot:
-            features_new = one_hot(features_new)
-            return pd.concat([data,features_new],axis=1)
-        else:
-            return pd.concat([data,features_new],axis=1)
     
     def polynomial_feature_derivation(self,data:pd.DataFrame,columns:list=[],degree:int=2,feature_interaction:int=0,include_bias:bool=False)->tuple[pd.DataFrame, preprocessing.PolynomialFeatures]:
         """
@@ -223,43 +166,7 @@ class FreatureDerivation:
         """
         if feature_interaction not in [0,1,2]:
             raise ValueError("feature_interacation must be 0,1 or 2")
-        
-        feature_interaction = [0,True,False][feature_interaction]
-
-        if columns != []:
-            if feature_interaction == 0:
-                data_p = pd.DataFrame()
-                for each in columns:
-                    derivator = preprocessing.PolynomialFeatures(degree=degree,include_bias=include_bias)
-                    data_d = derivator.fit_transform(data[each])
-                    data_d = pd.DataFrame(data=data_d, columns=derivator.get_feature_names_out())
-                    pd.concat([data_p,data_d],axis=1)
-            else:
-                derivator = preprocessing.PolynomialFeatures(degree=degree,interaction_only=feature_interaction,include_bias=include_bias)
-                data_p = derivator.fit_transform(data[columns])
-
-            columns_new = derivator.get_feature_names_out()
-            columns_old = data.columns
-            columns_remain = list(set(columns_old) - set(columns))
-            data_p = pd.DataFrame(data=data_p,columns=columns_new)
-            data = pd.concat([ data[columns_remain], data_p ],axis=1)
-            return data, derivator
-        else:
-            if feature_interaction == 0:
-                data_p = pd.DataFrame()
-                for each in data.columns:
-                    derivator = preprocessing.PolynomialFeatures(degree=degree,include_bias=include_bias)
-                    data_d = derivator.fit_transform(data[each])
-                    data_d = pd.DataFrame(data=data_d, columns=derivator.get_feature_names_out())
-                    pd.concat([data_p,data_d],axis=1)
-            else:
-                derivator = preprocessing.PolynomialFeatures(degree=degree,interaction_only=feature_interaction,include_bias=include_bias)
-                data_p = derivator.fit_transform(data)
-
-            columns_new = derivator.get_feature_names_out()
-            data = pd.DataFrame(data=data_p,columns=columns_new)
-            return data, derivator
-    
+        return
 
     def four_arithmetic_feature_derivation(self,data:pd.DataFrame,columns:list=[],operations:list=["+","-","*","/"])->pd.DataFrame:
         """
@@ -279,32 +186,8 @@ class FreatureDerivation:
         for each in operations:
             if each not in ["+","-","*","/"]:
                 raise ValueError("operations can only contain '+ - * / ' ")
+        return
 
-        if columns==[]:
-            columns = data.columns
-
-        new_features = [data]
-        for pos,x1 in enumerate(columns):
-            for x2 in columns[pos+1:]:
-                if "+" in operations:
-                    new_feature = pd.DataFrame(data=data[x1] + data[x2],columns=[x1+"+"+x2])
-                    new_features.append(new_feature)
-                if "*" in operations:
-                    new_feature = pd.DataFrame(data=data[x1] * data[x2],columns=[x1+"*"+x2])
-                    new_features.append(new_feature)
-
-                if "-" in operations:
-                    new_feature = pd.DataFrame(data=data[x1] - data[x2],columns=[x1+"-"+x2])
-                    new_features.append(new_feature)
-                    new_feature = pd.DataFrame(data=data[x2] - data[x1],columns=[x2+"-"+x1])
-                    new_features.append(new_feature)
-                if "/" in operations:
-                    new_feature = pd.DataFrame(data=data[x1] / data[x2],columns=[x1+"/"+x2])
-                    new_features.append(new_feature)
-                    new_feature = pd.DataFrame(data=data[x2] / data[x1],columns=[x2+"/"+x1])
-                    new_features.append(new_feature)
-
-        return pd.concat(new_features,axis=1)
 
     def group_freature_derivation(self, data:pd.DataFrame, maincol:list,aggs:dict)-> pd.DataFrame:
         """
@@ -334,40 +217,11 @@ class FreatureDerivation:
             skew: deviation of data distribution. It is less than zero and deviates to the left and greater than zero and deviates to the right
             media: median
             quantile: 2/4 quantile
+
         """
-        def quantile75(x:pd.DataFrame):
-            return x.quantile(0.75)
+
+        return
         
-        def quantile25(x:pd.DataFrame):
-            return x.quantile(0.25)
-
-        columns = copy.deepcopy(maincol)
-        mainstr = copy.deepcopy(columns[0])
-        aggs = copy.deepcopy(aggs)
-
-        for each in aggs.keys():
-            if 'ALL-num' in aggs[each]:
-                aggs[each] = ['max','min','mean','var','skew','median','quantile-0.25','quantile-0.75']
-            if 'ALL-cat' in aggs[each]:
-                aggs[each] = ['max','min','mean','var','median','quantile-0.25','quantile-0.75']
-            
-            columns.extend([ mainstr + '_' + each + '_' + stat for stat in aggs[each]])
-
-        for each in aggs.keys():
-            if 'quantile-0.75' in aggs[each]:
-                aggs[each].remove('quantile-0.75')
-                aggs[each].append(quantile75)
-            if 'quantile-0.25' in aggs[each]:
-                aggs[each].remove('quantile-0.25')
-                aggs[each].append(quantile25)
-
-        freature_data = data.groupby([mainstr]).agg(aggs).reset_index()
-        freature_data.columns = columns
-        dataframe = pd.merge(data,freature_data,how='left',on=mainstr)
-
-        gc.collect()
-        return dataframe
-
     def target_encode_derivation(self,data:pd.DataFrame,maincol:list,label_aggs:dict,kfold_length:int=0)->pd.DataFrame:
         """
         Derive data by target encode derivation.
@@ -403,43 +257,8 @@ class FreatureDerivation:
         """
         if kfold_length < 0 or type(kfold_length) == float:
             raise ValueError("kflod_length must be natural number")
-
-        if kfold_length == 0:
-            feature_derivated = self.group_freature_derivation(data=data,maincol=maincol,aggs=label_aggs)
-            return feature_derivated
-        
-        else:
-            feature_derivated = []
-            columns_old = data.columns.to_numpy().tolist()
-            columns_new = self.group_freature_derivation(data=data[0:1], maincol=maincol, aggs=label_aggs).columns.to_numpy().tolist()
-            columns_derivated = list(set(columns_new) - set(columns_old))
-
-            for i in tqdm.tqdm(range(data.shape[0] // kfold_length)):
-                data_release = data[i*kfold_length:(i+1)*kfold_length].copy(deep=True)
-                data_train = data[0:kfold_length*i].copy(deep=True)
-                data_train = pd.concat([data_train,data[(i+1)*kfold_length:]],axis=0).copy(deep=True)
-
-                data_train = self.group_freature_derivation(data=data_train, maincol=maincol, aggs=label_aggs)
-
-                for each in data_release[maincol[0]].unique().tolist():
-                    data_release.loc[(data_release[maincol[0]]==each),columns_derivated] = data_train.loc[(data_train[maincol[0]]==each),columns_derivated][0:1].values
-                
-                feature_derivated.append(data_release)
-
-            
-            if data.shape[0] // kfold_length != data.shape[0] / kfold_length:
-                data_release = data[(data.shape[0] // kfold_length)*kfold_length:].copy(deep=True)
-                data_train = data[0:(data.shape[0] // kfold_length)*kfold_length]
-                
-                data_train = self.group_freature_derivation(data=data_train, maincol=maincol, aggs=label_aggs)
-
-                for each in data_release[maincol[0]].unique().tolist():
-                    data_release.loc[(data_release[maincol[0]]==each),columns_derivated] = data_train.loc[(data_train[maincol[0]]==each),columns_derivated][0:1].values
-                
-                feature_derivated.append(data_release)
-            
-            return pd.concat(feature_derivated,axis=0)
-
+        return
+    
 
     def time_feature_derivation(self, time_data:pd.Series, time_stamp:dict=None, high_precision:bool=False)-> pd.DataFrame:
         """
@@ -462,52 +281,7 @@ class FreatureDerivation:
             Year, month and day (hour, minute and second) extraction of time point
             The difference between the key time point and the current time point (month, day, (hour, minute, second))
         """
-
-        features_new = pd.DataFrame()
-        time_data = pd.to_datetime(time_data)
-        col_name = time_data.name
-
-        features_new[col_name + '_year'] = time_data.dt.year
-        features_new[col_name + '_month'] = time_data.dt.month
-        features_new[col_name + '_day'] = time_data.dt.day
-
-        if high_precision:
-            features_new[col_name + '_hour'] = time_data.dt.hour
-            features_new[col_name + '_minute'] = time_data.dt.minute
-            features_new[col_name + '_second'] = time_data.dt.second
-
-        features_new[col_name + '_quarter'] = time_data.dt.quarter
-        #features_new[col_name + '_weekofyear'] = time_data.dt.week_of_year
-        features_new[col_name + '_dayofweek'] = time_data.dt.dayofweek
-        features_new[col_name + '_weekend'] = (features_new[col_name + '_dayofweek'] > 5).astype('int')
-
-        if high_precision:
-            features_new['hour_section'] = (features_new[col_name + '_hour'] //8 )
-
-        
-        timestamp_col_name = []
-        timestame_col = []
-
-        if time_stamp !=None:
-            timestamp_col_name = list(time_stamp.keys)
-            timestame_col = [pd.time_stamp(x) for x in list[time_stamp.values]]
-
-        time_max = time_data.max()
-        time_min = time_data.min()
-        timestame_col.extend([time_max,time_min])
-        timestamp_col_name.extend(['time_max','time_min'])
-
-        for time_stamp,time_stamp_name in zip(timestame_col,timestamp_col_name) :
-            time_diff = time_data - time_stamp
-            features_new['time_diff_days'+'_' +time_stamp_name] = time_diff.dt.days
-            features_new['time_diff_months'+'_' +time_stamp_name] = np.round(time_diff.dt.days / 30).astype('int')
-
-            if high_precision:
-                features_new['time_diff_seconds'+'_' +time_stamp_name] = time_diff.dt.seconds
-                features_new['time_diff_hours'+'_' +time_stamp_name] = time_diff.values.astype('timedelta64[ns]').astype('int')
-                features_new['time_diff_minutes'+'_' +time_stamp_name] = time_diff.values.astype('timedelta64[ns]').astype('int')
-
-        return features_new
+        return
 
 
 
@@ -541,17 +315,7 @@ class FeatureFilter:
         """
         if data.shape[0] != len(labels):
             raise ValueError("The input data does not match the label")
-
-        features = data.columns
-        selector = feature_selection.SelectKBest(feature_selection.f_classif, k=data.shape[1])
-        selector.fit(data,labels)
-        index = selector.get_support().tolist()
-        p_values = selector.pvalues_[index].tolist()
-        feature_selected = features[index].tolist()
-        feature_selected.sort(key=lambda p_values:p_values[0])
-        data = pd.DataFrame(data=data[feature_selected],columns=feature_selected)
-
-        return data, selector, p_values
+        return
 
 
     def analysis_RFE(self, data:pd.DataFrame|pd.Series, labels:pd.DataFrame|pd.Series, estimator:base.BaseEstimator
@@ -591,64 +355,4 @@ class FeatureFilter:
         if test_data.index.shape != test_labels.index.shape:
             raise ValueError("the number of rows of test_data must be the same as it of test_labels")
         
-        if type(data) == pd.Series:
-            data = pd.DataFrame(data)
-        if type(labels) == pd.Series:
-            labels = pd.DataFrame(labels)
-
-        if test_data == None:
-            test_data = data.copy(deep=True)
-            test_labels = labels.copy(deep=True)
-        
-        if high_precision:
-            data_search = data.copy(deep=True)
-            feature_select_list = []
-            scores = []
-
-            for i in tqdm.tqdm(range(data.shape[1]-1)):
-                i = (data.shape[1]-1) - i
-                model_search = model_selection.GridSearchCV(estimator=estimator, param_grid=params, n_jobs=n_jobs)
-                model_search.fit(data_search,labels.values)
-
-                selector = feature_selection.RFE(model_search.best_estimator_,n_features_to_select=i).fit(data_search,labels.values)
-                
-                feature_out = list(set(selector.feature_names_in_.tolist())- set(selector.get_feature_names_out().tolist()))[0] 
-                scores.append([feature_out,selector.score(test_data[selector.feature_names_in_],test_labels.values)])
-                feature_select_list.append(feature_out)
-                data_search = data[selector.get_feature_names_out()]
-
-            gc.collect()
-
-            feature_select_list = feature_select_list[::-1]
-            feature_select_list.append(selector.get_feature_names_out().tolist()[0])
-
-            data = data[feature_select_list]
-
-            return data, scores
-            
-        else:
-            data_search = data.copy(deep=True)
-            feature_select_list = []
-            scores = []
-
-            model_search = model_selection.GridSearchCV(estimator=estimator,param_grid=params,n_jobs=n_jobs)
-            model_search.fit(data_search,labels.values)
-
-            for i in tqdm.tqdm(range(data.shape[1]-1)):
-                i = (data.shape[1]-1) - i
-
-                selector = feature_selection.RFE(model_search.best_estimator_,n_features_to_select=i).fit(data_search,labels.values)
-                
-                feature_out = list(set(selector.feature_names_in_.tolist())- set(selector.get_feature_names_out().tolist()))[0] 
-                scores.append([feature_out,selector.score(test_data[selector.feature_names_in_],test_labels.values)])
-                feature_select_list.append(feature_out)
-                data_search = data[selector.get_feature_names_out()]
-            
-            gc.collect()
-
-            feature_select_list = feature_select_list[::-1]
-            feature_select_list.append(selector.get_feature_names_out().tolist()[0])
-
-            data = data[feature_select_list]
-
-            return data,scores
+        return

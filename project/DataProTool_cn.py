@@ -1,20 +1,19 @@
 """
 DataProTool
 =====
-
-introduction
+简介
 ----
 
-    It is a library that support advance tools in feature engineering and data progress.
-    This library is independently developed by Zhang Jiexi. Author's e-mail: zhangjiexi66696@outlook.com
+    此库是一个支持特征工程和数据处理高级工具的库。
+    库由张杰郗独立开发.作者B站: https://space.bilibili.com/666767280?spm_id_from=333.788.0.0
+    邮箱: zhangjiexi66696@outlook.com
 
-dependent libraries
+依赖库
 -----
-
     numpy ~= 1.23.3
     pandas ~= 1.5.0
     scikit-learn ~= 1.0.2
-    tqdm ~= 4.64.1
+    tqdm ~=4.64.1
 """
 
 # -*- coding: utf-8 -*-
@@ -37,16 +36,14 @@ __dependent__ = [["numpy","~=1.23.3"],["pandas","~=1.5.0"],["scikit-learn","~=1.
 
 def one_hot_columns(col_used:list, col_categories:list)-> list:
     """
-    Normalize the feature names after OneHot encoding.
+    把onehot编码形成的特征名称命名规范化.
 
-    Args
-    ----
-        col_used(list): Columns before encoding by OneHot.
-        col_categories(list): Columns which are after encoding by OneHot.
+    Args:
+        col_used(list): 之前的columns.
+        col_categories(list): 被OneHot编码器编码得到的columns.
 
-    Returns
-    -------
-        col_new(list): the feature names after OneHot encoding.
+    Returns:
+        col_new(list): 命名规范化后的特征名称.
     """
 
     col_new=[]
@@ -62,17 +59,15 @@ def one_hot_columns(col_used:list, col_categories:list)-> list:
 
 def one_hot(data: pd.DataFrame,columns:list=[],drop: str='if_binary')-> pd.DataFrame:
     """
-     Encode the data by OneHot and name the normalized data.
+    对data进行OneHot编码,返回命名规范化的dataframe.
 
-    Args
-    ----
-        data(pd.DataFrame):  Data that need to be encoded by OneHot.
-        columns(list): Columns that need to be encoded by OneHot in the data.Defauts to [](OneHot all columns).
-        drop(str, optional): Whether to OneHot for the secondary classification feature Default 'if_ binary'.
+    Args:
+        data(pd.DataFrame): 需要被OneHot编码的dataframe.
+        columns(list): 需要被OneHot编码的columns.
+        drop(str, optional): 是否取消对二分类的OneHot. 默认'if_binary'.
     
-    Returns
-    -------
-        data(pd.DataFrame) Data after OneHot encoding,include the data which is not encode by OneHot.
+    Returns:
+        data(pd.DataFrame):Onehot后的全部data(包括未OneHot的数据).
     """
 
     emc = preprocessing.OneHotEncoder(drop='if_binary') if drop == 'if_binary' else preprocessing.OneHotEncoder()
@@ -96,16 +91,14 @@ def one_hot(data: pd.DataFrame,columns:list=[],drop: str='if_binary')-> pd.DataF
 
 def nan_count(data:pd.DataFrame,columns:list=['ALL'])-> pd.DataFrame:
     """
-    Get the missing values of the dataframe (number of missing values, percentage of missing values).
+    获取dataframe关于缺失值的信息(缺失值个数,缺失值占比).
 
-    Args
-    ----
-        data (pd.DataFrame): Dataframe to be counted.
-        columns (list, optional):Columns to be counted in the data. Defaults to ['ALL'].
+    Args:
+        data (pd.DataFrame): 需统计的dataframe.
+        columns (list, optional):需统计的列.默认['ALL'].
 
-    Returns
-    -------
-        data(pd.Dataframe): Missing values informations of the data.
+    Returns:
+        data(pd.Dataframe): 以dataframe形式返回统计信息.
     """
 
     columns = data.columns if columns == ['ALL'] else columns
@@ -126,56 +119,54 @@ def nan_count(data:pd.DataFrame,columns:list=['ALL'])-> pd.DataFrame:
 
 class FreatureDerivation:
     """
-        This class is used to following feature derivate:
+    此类用于实现以下特征衍生
+        交叉组合特征衍生:
+         cross_combination_feature_derivation()
 
-            cross combination feature derivation:
-             cross_combination_feature_derivation()
+        多项式特征衍生:
+         polynomial_feature_derivation()
 
-            polynomial feature derivation:
-             polynomial_feature_derivation()
+        四则运算特征衍生:
+         four_arithmetic_feature_derivation()
 
-            four arithmetic feature derivation:
-             four_arithmetic_feature_derivation()
+        分组特征衍生: 
+         group_freature_derivation()
 
-            group freature derivation: 
-             group_freature_derivation()
-            
-            target encode derivation:
-             target_encode_derivation()
+        目标编码特征衍生:
+         target_encode_derivation()
+        
+        时序特征衍生: 
+         time_feature_dervation()
 
-            time feature dervation: 
-             time_feature_dervation()
-
-    Second order feature derivation suggestion
-    =========================================
-        1. group freature derivation + four arithmetic feature derivation
-        -----------------------------------------------------------------
-            Traffic smoothing feature: main features' data derived from grouping statistical characteristics/(average value of each derived features+ ε)
-                ε To prevent dividing by 0
-            Gold portfolio feature: Group statistical features derive main feature's data - average value of each derived features
-            Gap: The upper quartile of a feature - its lower quartile
-            Data skewness: average median of a feature or average/median of a feature
-            Coefficient of variation: standard deviation of a feature/(mean value of a feature+ ε), ε To prevent dividing by 0
+    二阶特征衍生建议
+    ===============
+        1.分组统计特征衍生 + 四则运算特征衍生
+        -----------------------------------
+            流量平滑特征: 分组统计特征衍生主要特征数据 / (各个衍生出特征的平均值 + ε), ε是为了防止除以0.
+            黄金组合特征: 分组统计特征衍生主要特征数据 - 各个衍生出特征的平均值.
+            gap: 一个特征的上四分位数 - 其下四分位数.
+            数据偏度: 一个特征的平均值 - 其中位数 或 一个特征的平均值 / 其中位数
+            变异系数: 一个特征的标准差 / (一个特征的均值 + ε), ε是为了防止除以0.
+        
     """
 
     def cross_combination_feature_derivation(self,data:pd.DataFrame,columns:list=[],is_onehot:bool=True)->pd.DataFrame:
         """
-        Derive data by bivariate cross combination feature derivation.
+        对数据进行双变量交叉组合特征衍生.
 
         Args
         ----
-            data (pd.DataFrame): Data need to derived.
-            columns (list): Features' names that need to derived in the data.
-                If columns equals to [], the function will derive all the columns in the data.Defaults to [].
-            is_onehot (bool, optional): Whether to onehot the data after derivation. Defaults to True.
+            data (pd.DataFrame): 需要进行处理的数据.
+            columns (list):要进行特征衍生的列名,如果为 [] 则对所有列进行特征衍生.
+            is_onehot (bool, optional): 是否对处理后的数据进行OneHot编码,默认为True.
 
         Returns
         -------
-            data(pd.DataFrame): The data after deriving.
+            data(pd.DataFrame): 经过交叉组合特征衍生后的数据.
 
-        Usage suggestions
+        使用建议
         -----------------
-            This function is usually suggested to use for discrete features.
+           建议对离散型特征进行此特征衍生.
         """
         feature_new = []
 
@@ -199,30 +190,28 @@ class FreatureDerivation:
     
     def polynomial_feature_derivation(self,data:pd.DataFrame,columns:list=[],degree:int=2,feature_interaction:int=0,include_bias:bool=False)->tuple[pd.DataFrame, preprocessing.PolynomialFeatures]:
         """
-        Derive data by polynomial feature derivation.
+        对数据进行多项式特征衍生.
 
         Args
         ----
-            data (pd.DataFrame): Data need to derived.
-            columns (list): Features' names that need to derived in the data.
-            If columns equals to [], the function will derive all the columns in the data.Defaults to [].
-            degree (int, optional): The polynomial's highest degree.Defaults to 2.
-            feature_interaction (int, optional): Generate feature form. 0 means no interactive feature is generated,
-                1 means only interactive feature is generated, and 3 means single feature and interactive feature are generated.Defaults to 0.
-            include_bias (bool, optional):Whether to include bias column,
-                that is, all polynomial powers in this feature are zero.Defaults to False.
+            data (pd.DataFrame): 需要进行多项式特征衍生的数据.
+            columns (list): 要进行特征衍生的列名,如果为 [] 则对所有列进行特征衍生.
+            degree (int, optional): 多项式最高次数,默认为2.
+            feature_interaction (int, optional): 特征衍生形式. 0 表示不生成交互特征,
+                1 表示只生成交互特征, 2表示生成交互特征与单个特征.默认为0.
+            include_bias (bool, optional):是否包括偏差列,即该特征中所有多项式幂均为零.默认为False.
 
         Returns
         -------
-            data(pd.DataFrame): The data after deriving.
-            model(sklearn.preprocessing.PolynomialFeatures):The model which is used to derive features.
+            data(pd.DataFrame): 经过多项式特征衍生后的数据.
+            model(sklearn.preprocessing.PolynomialFeatures):进行多项式特征衍生的模型.
 
-        Usage suggestions
-        -----------
-            This function is suggested to use for continuous features.
+        使用建议
+        -------
+            建议对连续性特征进行此特征衍生.
         """
         if feature_interaction not in [0,1,2]:
-            raise ValueError("feature_interacation must be 0,1 or 2")
+            raise ValueError("feature_interacation 只能为 0,1 或 2")
         
         feature_interaction = [0,True,False][feature_interaction]
 
@@ -263,22 +252,21 @@ class FreatureDerivation:
 
     def four_arithmetic_feature_derivation(self,data:pd.DataFrame,columns:list=[],operations:list=["+","-","*","/"])->pd.DataFrame:
         """
-        Derive data by four arithmetic feature derivation.
+        对数据进行四则运算特征衍生.
 
         Args
         ----
-            data (pd.DataFrame): data need to derived.
-            columns (list, optional): features' names that need to derived in the data.
-                If columns equals to [], the function will derive all the columns in the data. Defaults to [].
-            operations (list, optional): operations, can only contain '+ - * / '. Defaults to ["+","-","*","/"].
+            data (pd.DataFrame): 需要进行多项式特征衍生的数据.
+            columns (list): 要进行特征衍生的列名,如果为 [] 则对所有列进行特征衍生.
+            operations (list, optional): 要进行的操作, 只能包括 '+ - * /'中的项. 默认为 ["+","-","*","/"].
 
         Returns
         -------
-            data(pd.DataFrame): the data after deriving.
+            data(pd.DataFrame): 经过四则运算特征衍生后的数据.
         """
         for each in operations:
             if each not in ["+","-","*","/"]:
-                raise ValueError("operations can only contain '+ - * / ' ")
+                raise ValueError("operations 只能包含 '+ - * / ' ")
 
         if columns==[]:
             columns = data.columns
@@ -308,32 +296,34 @@ class FreatureDerivation:
 
     def group_freature_derivation(self, data:pd.DataFrame, maincol:list,aggs:dict)-> pd.DataFrame:
         """
-        Derive data by group feature derivation.
+        对数据进行分组特征衍生.
 
         Args
         ----
-            data (pd. DataFrame): data that needs to be derived by grouping features.
-            maincol (list): The main feature's name, can only have one.
-            aggs (list): the parameter of the agg function.
-            Parameter aggs format:
-                {feature name (str): [feature operation (str),...],...}
-                Feature operation support: max,min,mean,var,skew,medium,count,
-                nunique,quantile-0.75 (upper quartile),quantile-0.25 (lower quartile),FLF,gold
-                ALL-num (operations of all continuous features in common statistics), ALL-cat (operations of all discrete features in common statistics)
+            data (pd.DataFrame):需要进行分组特征衍生的数据.
+            maincol (list): 主要特征名,只能有一个.
+            aggs (list): agg函数的参数.
+
+            参数aggs格式:
+                {特征名(str) : [特征操作(str) , ... ] , ...}
+            特征操作支持: max  min  mean  var  skew  median  count
+            nunique  quantile-0.75(上四分位数)  quantile-0.25(下四分位数)
+            ALL-num(常用统计量内的所有连续型变量的操作): ['max','min','mean','var','skew','median','quantile-0.25','quantile-0.75']
+            ALL-cat(常用统计量内的所有离散型变量的操作): ['max','min','mean','var','median','quantile-0.25','quantile-0.75']
             e.g:
-            {'Ages':['max', 'mean'], 'Plcass':['min','std']}
+                {'Ages':['max', 'mean'], 'Plcass':['min','std']}
 
         Returns
         -------
-        data (pd. DataFrame): all data derived from grouped features, including data without derivating.
+            data(pd.DataFrame): 分组特征衍生后的全部数据,包括未进行特征工程的数据.
 
-        agg parameter interpretation
-        ----------------------------
-            max, min: maximum value
-            mean/var: mean/variance
-            skew: deviation of data distribution. It is less than zero and deviates to the left and greater than zero and deviates to the right
-            media: median
-            quantile: 2/4 quantile
+        Aggs参数解释
+        -----------
+            max,min:最值.
+            mean/var:均值/方差.
+            skew:数据分布偏度.小于零向左偏,大于零向右偏.
+            median:中位数.
+            quantile:2/4分位数.
         """
         def quantile75(x:pd.DataFrame):
             return x.quantile(0.75)
@@ -370,40 +360,39 @@ class FreatureDerivation:
 
     def target_encode_derivation(self,data:pd.DataFrame,maincol:list,label_aggs:dict,kfold_length:int=0)->pd.DataFrame:
         """
-        Derive data by target encode derivation.
+        对数据进行目标编码.
 
         Args
         ----
-            data (pd.Dataframe): data that need to be derived by target encode derivation(include labels).
-            maincol (list): The main feature's name, can only have one.
-            label_aggs (dict): The agg function's parameters,
-              which can only be processed with labels, are in the same format as group_ Freature_ Derivation() function.
-            Parameter label_aggs format:
-                {feature name (str): [feature operation (str),...],...}
-                Feature operation support: max,min,mean,var,skew,medium,count,
-                nunique,quantile-0.75 (upper quartile),quantile-0.25 (lower quartile),FLF,gold
-                ALL-num (operations of all continuous features in common statistics), ALL-cat (operations of all discrete features in common statistics)
+            data (pd.Dataframe): 需要进行目标编码的数据(包括标签).
+            maincol (list): 主要特征名,只能有一个.
+            label_aggs (dict): agg函数的参数,只能对标签进行处理,参数格式同group_freature_derivation() 函数.
+            参数label_aggs格式:
+                {特征名(str) : [特征操作(str) , ... ] , ...}
+            特征操作支持: max  min  mean  var  skew  median  count
+            nunique  quantile-0.75(上四分位数)  quantile-0.25(下四分位数)
+            ALL-num(常用统计量内的所有连续型变量的操作): ['max','min','mean','var','skew','median','quantile-0.25','quantile-0.75']
+            ALL-cat(常用统计量内的所有离散型变量的操作): ['max','min','mean','var','median','quantile-0.25','quantile-0.75']
             e.g:
-            {'Ages':['max', 'mean'], 'Plcass':['min','std']}
-            
-            kfold_length (int, optional): The amount of data for each set of data for which kflod cross-generation features are performed,
-             if 0, then no cross-generation features are performed.Defaults to 0.
+                {'Ages':['max', 'mean'], 'Plcass':['min','std']}
+            kfold_length (int, optional): 进行kflod交叉生成特征每组数据的量,如果为0,则不进行交叉生成特征.默认为0.
 
         Returns
         -------
-            data(pd.DataFrame): all data derived , including data without derivating.
+            data(pd.DataFrame): 处理后的数据 
         
-        Label_agg parameter interpretation
-        ----------------------------------
-            max, min: maximum value
-            mean/var: mean/variance
-            skew: deviation of data distribution. It is less than zero and deviates to the left and greater than zero and deviates to the right
-            media: median
-            quantile: 2/4 quantile
+        Label_aggs参数解释
+        -----------
+            max,min:最值.
+            mean/var:均值/方差.
+            skew:数据分布偏度.小于零向左偏,大于零向右偏.
+            median:中位数.
+            quantile:2/4分位数.
+
         """
         if kfold_length < 0 or type(kfold_length) == float:
-            raise ValueError("kflod_length must be natural number")
-
+            raise ValueError("kflod_length 必须为自然数")
+        
         if kfold_length == 0:
             feature_derivated = self.group_freature_derivation(data=data,maincol=maincol,aggs=label_aggs)
             return feature_derivated
@@ -443,24 +432,26 @@ class FreatureDerivation:
 
     def time_feature_derivation(self, time_data:pd.Series, time_stamp:dict=None, high_precision:bool=False)-> pd.DataFrame:
         """
-        Derive data by time feature derivation.
+        对数据进行时序特征衍生.
 
-        Args
-        ----
-            timeSeries (pd.Series): Time series field to be derived from time series characteristics.Defaults time format to "Y-H-D H: M: S".
-            time_Stamp (pd.time_stamp, optional): Enter the timestamp of the key time node manually.Defaults to None.
-            timeStage parameter format:
-                {'Key time node name ': ['Time point']...}, time point default format: "Y-H-D H: M: S".
-            high_precision (bool, optional): Whether to perform high-precision (hour, minute, second) calculation.Defaults to False.
+        参数:
+        ---
 
-        Returns
-        -------
-            data (pd.DataFrame): data derived from time series characteristics.
+        Args:
+            timeSeries (pd.Series):要进行时序特征衍生的时序字段,时间默认格式: "Y-H-D H:M:S".
+            time_stamp (pd.time_stamp, optional): 手动输入关键时间节点的时间戳. 默认为 无(None).
+            timeStame 参数格式:
+            {'关键时间节点名称':['时间点']...} ,时间点默认格式:"Y-H-D H:M:S".
 
-        Derivative content of time feature derivation:
+            precision_high (bool, optional): 是否进行高精度(时分秒)计算. 默认为False.
+
+        Returns:
+            data(pd.DataFrame): 时序特征衍生后的数据.
+
+        时序特征衍生内容:
         ----------------
-            Year, month and day (hour, minute and second) extraction of time point
-            The difference between the key time point and the current time point (month, day, (hour, minute, second))
+            时间点的年、月、日(时、分、秒)提取.
+            关键时间点与当前时间点的差(月、日、(时、分、秒)).
         """
 
         features_new = pd.DataFrame()
@@ -513,34 +504,34 @@ class FreatureDerivation:
 
 class FeatureFilter:
     """
-    This class is used to following features filter:
-        analysis variance(ANOVA): analysis_variance
-        feature recursive elimination(RFE): analysis_RFE
+    此类用于实现以下特征筛选:
+        方差分析: analysis_variance
+        特征递归消除(RFE): analysis_RFE
     """
 
     def analysis_variance(self, data:pd.DataFrame, labels:pd.DataFrame)->tuple[pd.DataFrame,feature_selection.SelectKBest]|tuple[pd.DataFrame,feature_selection.SelectKBest,list]:
         """
-        Perform variance analysis(ANOVA) on the data, and return the filtered features, filtering model and p_values.
+        对数据进行方差分析(ANOVA),并返回筛选后的特征、筛选模型与p_values.
         
 
         Args
         ----
-            data (pd.DataFrame|pd.Series|np.ndarray): data that needs variance analysis.
-            labels (pd.DataFrame|pd.Series|np.ndarray): labels of data.
+            data (pd.DataFrame|pd.Series|np.ndarray): 需要进行方差分析的特征数据.
+            labels (pd.DataFrame|pd.Series|np.ndarray): 数据的标签.
 
         Returns
         -------
-            data (pd.DataFrame): data filtered out after variance analysis, in the order of p_values are from small to large.
-            selector (feature_selection.SelectKBest): a trained model.
-            p_values (list, optional): p_values of all features.
+            data(pd.DataFrame): 方差分析后被筛选出的特征数据,顺序为p_values从小到大.
+            selector(feature_selection.SelectKBest): 训练好的模型.
+            p_values(list,optional): 所有特征的p_values.
 
-        Usage suggestions
-        -----------------
-            variance analysis(ANOVA) is applicable to discrete label filtering for continuous features.
+        使用建议
+        -------
+            方差分析适用与离散型标签与连续性特征.
 
         """
         if data.shape[0] != len(labels):
-            raise ValueError("The input data does not match the label")
+            raise ValueError("输入数据与标签数量不匹配")
 
         features = data.columns
         selector = feature_selection.SelectKBest(feature_selection.f_classif, k=data.shape[1])
@@ -557,39 +548,35 @@ class FeatureFilter:
     def analysis_RFE(self, data:pd.DataFrame|pd.Series, labels:pd.DataFrame|pd.Series, estimator:base.BaseEstimator
     , params:dict|None=None, test_data:pd.DataFrame|None=None,test_labels: pd.DataFrame|None=None,n_jobs:int=1, high_precision:bool=False)->tuple[pd.DataFrame,list]:
         """
-        Recursive feature elimination(RFE) is performed on the data, and the filtered features and filtering model are returned.
+        对数据进行特征递归消除,并返回筛选后的特征及筛选模型.
 
         Args
         ----
-            data (pd.DataFrame|pd.Series): feature data that requires RFE feature filtering.
-            labels (pd.DataFrame|pd.Series): data labels.
-            estimator (base.BaseEstimator): Supervised learning estimator used for feature filtering.
-            n_jobs (int, optional): The number of CPUs for feature filtering.
-                Attention: This parameter is only valid for GridSearchCV.Defaults to 1.
-            verbose (int, optional): the detail level of the output model training process during feature filtering.Defaults to 0.
-            param (dict, optional): the parameter range of grid search for each training model during feature filtering. Defaults to None (no grid search).
-            test_data (pd.DataFrame|None, optional): the feature data used to evaluate the accuracy of the model after each round of feature filter.
-                If it is None, the training data will be used for evaluation.Defaults to None
-            test_labels (pd.DataFrame|None, optional): data labels used to evaluate the accuracy of the model after each round of feature filter.
-                If it is None, the training data will be used for evaluation.Defaults to None.
-            high_precision (bool, optional): Whether to perform high-precision search. The default is False.
+            data (pd.DataFrame | pd.Series): 需要进行RFE特征筛选的特征数据.
+            labels (pd.DataFrame | pd.Series): 数据标签.
+            estimator (base.BaseEstimator): 用来进行特征筛选的监督学习估计器.
+            n_jobs (int, optional):  进行特征筛选的CPU数量,注意: 此参数仅对GridSearchCV有效,默认为1.
+            verbose (int, optional): 进行特征筛选时输出模型训练过程的详细程度,默认为0.
+            param (dict, optional): 在特征筛选是每个训练模型的网格搜索的参数范围.默认值为”None"(不进行网格搜索调参).
+            test_data (pd.DataFrame|None, optional): 在每一轮特征筛选之后,用于评估模型准确性的特征数据.如果为"None",则将使用训练数据进行评估.默认值为"None".
+            test_labels (pd.DataFrame|None, optional): 用于在每一轮特征筛选之后评估模型准确性的数据标签.如果为"None".则将使用训练数据进行评估.默认为"None".
+            high_precision(bool, optional): 是否进行高精度搜索,默认为 False.
 
         Returns
         -------
-            data (pd.Dataframe): filtered features.
-            scores (list): model score, in the format of [feature name eliminated in this round, model score].
-        
-        Usage suggestions
-        -----------------
-            If high_precision is True, it will be more accurate to use RFE features to filter, but it will take up a lot of resources.
-            So,it is not recommended to use it on computers with poor configuration.
+            data(pd.Dataframe): 筛选出的特征.
+            scores (list): 模型分数, 格式为 [本轮被剔除的特征名, 模型分数].
+
+        使用建议
+        -------
+            如果high_precision为True,那么RFE的准确率会提高,但是会占用更多资源,消耗更多时间.因此不建议在配置不好的电脑上使用.
         """
         if type(test_data) != type(test_labels):
-            raise ValueError("test_data and test_labels must be the same type")
+            raise ValueError("test_data 与 test_labels 必须为同为None或pd.DataFrame")
         if data.index.shape != labels.index.shape:
-            raise ValueError("the number of rows of data must be the same as it of labels")
+            raise ValueError("训练数据必须与标签数量保持一致")
         if test_data.index.shape != test_labels.index.shape:
-            raise ValueError("the number of rows of test_data must be the same as it of test_labels")
+            raise ValueError("测试数据必须与测试标签数量保持一致")
         
         if type(data) == pd.Series:
             data = pd.DataFrame(data)

@@ -1,13 +1,15 @@
 Metadata-Version: 2.1
 Name: DataProTool
-Version: 1.1.1
+Version: 1.2.0b0
 Summary: It is a library that support advance tools in feature engineering
 Home-page: https://github.com/Zhang-Jiexi/DataProTool
 Author: Zhang Jiexi
 Author-email: zhangjiexi66696@outlook.com
-Classifier: Programming Language :: Python :: 3
+License: MIT License
+Classifier: Programming Language :: Python :: 3.9
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: Microsoft
+Classifier: Natural Language :: English
 Classifier: Natural Language :: Chinese (Simplified)
-Classifier: Development Status :: 5 - Production/Stable
+Classifier: Development Status :: 4 - Beta
 License-File: LICENSE
