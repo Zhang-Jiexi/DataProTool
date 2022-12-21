@@ -17,7 +17,7 @@ what's new in the version`1.2.0`
 ---------------------------------
 
 1.Support English!</br>
-Now, I create an English version for this tool.and I set this tool's main language is English.</br>
+Now, I create an English version for this tool.and I set this tool's main language as English.</br>
 You can simplely use `import dataprotool`.</br>
 If you want to use Chinese version, you can use `import dataprotool.cn` to import.
 
